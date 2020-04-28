@@ -1,0 +1,12 @@
+# afm-api-supervisor.service
+
+[Unit]
+Description=Service to start the API 'supervisor'
+
+Requires=afm-api-supervisor.socket
+After=afm-api-supervisor.socket
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true

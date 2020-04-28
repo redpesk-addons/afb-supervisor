@@ -1,0 +1,21 @@
+# afm-api-supervisor.socket.in
+
+[Unit]
+Description=Service to start the API 'supervisor'
+
+DefaultDependencies=no
+
+Requires=afm-system-setup.service
+After=afm-system-setup.service
+
+[Socket]
+SmackLabel=*
+SmackLabelIPIn=System
+SmackLabelIPOut=System
+ListenStream=/run/platform/apis/ws/supervisor
+FileDescriptorName=supervisor
+Service=afs-supervisor.service
+
+[Install]
+WantedBy=sockets.target
+

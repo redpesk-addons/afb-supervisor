@@ -1,0 +1,295 @@
+
+Run the supervisor on the target for the public IP:
+---------------------------------------------------
+
+	# afs-supervisor --port 1619 --token HELLO
+
+Run the client
+--------------
+
+	# afb-client-demo -H host:1619/api?token=HELLO
+
+
+verbs that can be run, all are of the API 'supervisor':
+-------------------------------------------------------
+
+	- discover
+
+		send SIGHUP to daemons not recorded to make them connected
+
+	- list
+
+		list the connected daemons
+
+	- config        {"pid":X}
+
+		get the configuration of the daemon of pid X
+
+	- sessions      {"pid":X}
+
+		get the active sessions and token of the daemon of pid X
+
+	- session-close {"pid":X, "uuid":UUID}
+
+		closes the sessions of uuid UUID for the daemon of pid X
+
+	- exit          {"pid":X,"code":Y}
+
+		exit the daemon of pid X with optional code Y (default 0)
+
+	- debug-wait    {"pid":X}
+
+		make the daemon of pid X wait for a signal SIGINT
+
+	- debug-break   {"pid":X}
+
+		make the daemon of pid X self killing with SIGINT
+
+	- do            {"pid":X,"api":A,"verb":V,"args":A}
+
+		execute the API/VERB(ARGS) for the daemon of pid X
+
+		useful for (s/g)etting monitor info. ex: monitor/get({"apis":true})
+
+		bound to the current client session (to be checked: usurpation of session?)
+
+	- trace         {"pid":X, ...}
+
+		like monitor/trace but not bound to session (in the future monitor/trace
+		will be bound to sessions)
+
+		allows to trace specific session or any session
+
+		the pid isn't returned in the event (not sure to want it but open...)
+
+		use "name" and "tag" feature of "trace" to discriminate events on the client side.
+
+Examples of dialog:
+-------------------
+
+supervisor discover
+ON-REPLY 1:supervisor/discover: OK
+{
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success",
+    "uuid":"22563ce6-e07f-4284-91f8-e7eb7ec4ef21"
+  }
+}
+
+
+supervisor list
+ON-REPLY 2:supervisor/list: OK
+{
+  "response":{
+    "7054":{
+      "pid":7054,
+      "uid":1001,
+      "gid":1001,
+      "id":"NoLabel",
+      "label":"NoLabel",
+      "user":"1001"
+    }
+  },
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success"
+  }
+}
+
+
+
+supervisor config {"pid":7054}
+ON-REPLY 3:supervisor/config: OK
+{
+  "response":{
+    "console":".\/AFB-console.out",
+    "rootdir":".",
+    "roothttp":"..\/test",
+    "rootbase":"\/opa",
+    "rootapi":"\/api",
+    "workdir":".",
+    "uploaddir":".",
+    "token":"",
+    "name":null,
+    "aliases":[
+      "\/monitoring"
+    ],
+    "dbus_clients":[
+    ],
+    "dbus_servers":[
+    ],
+    "ws_clients":[
+    ],
+    "ws_servers":[
+    ],
+    "so_bindings":[
+    ],
+    "ldpaths":[
+      "\/opt\/jobol\/lib64\/afb"
+    ],
+    "weak_ldpaths":[
+    ],
+    "calls":[
+    ],
+    "exec":[
+    ],
+    "httpdPort":5555,
+    "cacheTimeout":100000,
+    "apiTimeout":20,
+    "cntxTimeout":32000000,
+    "nbSessionMax":10,
+    "mode":"local",
+    "tracereq":"no",
+    "traceditf":"no",
+    "tracesvc":"no",
+    "traceevt":"no",
+    "traceses":"no",
+    "no_ldpaths":false,
+    "noHttpd":false,
+    "background":false,
+    "monitoring":true,
+    "random_token":false
+  },
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success"
+  }
+}
+
+
+
+
+
+supervisor sessions {"pid":7054}
+ON-REPLY 4:supervisor/sessions: OK
+{
+  "response":{
+    "2273ff8d-ee46-4059-959b-0f90fa90f25e":{
+      "token":""
+    },
+    "22563ce6-e07f-4284-91f8-e7eb7ec4ef21":{
+      "token":""
+    }
+  },
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success"
+  }
+}
+
+
+
+
+
+supervisor do {"pid":7054,"api":"monitor","verb":"get","args":{"apis":true}}
+.....VERY LONG RESPONSE.....
+
+
+
+
+supervisor trace { "pid": 7054, "add": { "request": "common" } }
+ON-REPLY 6:supervisor/trace: OK
+{
+  "jtype":"afb-reply",
+  "request":{
+    "status":"success"
+  }
+}
+
+
+
+
+
+ON-EVENT supervisor/trace:
+{
+  "event":"supervisor\/trace",
+  "data":{
+    "time":"34353.598120",
+    "tag":"trace",
+    "type":"request",
+    "id":34,
+    "request":{
+      "index":1,
+      "api":"ave",
+      "verb":"ping",
+      "action":"begin",
+      "session":"be67cfb8-a346-47c1-ac63-65aaff3599bf"
+    }
+  },
+  "jtype":"afb-event"
+}
+ON-EVENT supervisor/trace:
+{
+  "event":"supervisor\/trace",
+  "data":{
+    "time":"34353.598182",
+    "tag":"trace",
+    "type":"request",
+    "id":35,
+    "request":{
+      "index":1,
+      "api":"ave",
+      "verb":"ping",
+      "action":"json",
+      "session":"be67cfb8-a346-47c1-ac63-65aaff3599bf"
+    },
+    "data":{
+      "result":"true"
+    }
+  },
+  "jtype":"afb-event"
+}
+ON-EVENT supervisor/trace:
+{
+  "event":"supervisor\/trace",
+  "data":{
+    "time":"34353.598214",
+    "tag":"trace",
+    "type":"request",
+    "id":36,
+    "request":{
+      "index":1,
+      "api":"ave",
+      "verb":"ping",
+      "action":"success",
+      "session":"be67cfb8-a346-47c1-ac63-65aaff3599bf"
+    },
+    "data":{
+      "result":"Some String",
+      "info":"Ping Binder Daemon tag=pingSample count=1 query=\"true\""
+    }
+  },
+  "jtype":"afb-event"
+}
+ON-EVENT supervisor/trace:
+{
+  "event":"supervisor\/trace",
+  "data":{
+    "time":"34353.598292",
+    "tag":"trace",
+    "type":"request",
+    "id":37,
+    "request":{
+      "index":1,
+      "api":"ave",
+      "verb":"ping",
+      "action":"end",
+      "session":"be67cfb8-a346-47c1-ac63-65aaff3599bf"
+    }
+  },
+  "jtype":"afb-event"
+}
+
+
+Usefull commands:
+-----------------
+
+  TARGET=...
+
+  afb-client-demo -H ws://$TARGET:1619/api?token=HELLO\&uuid=HELLO supervisor list
+
+  afb-client-demo -H ws://$TARGET:1619/api?token=HELLO\&uuid=HELLO config '{"pid":XXXX}'
+
+  
+
