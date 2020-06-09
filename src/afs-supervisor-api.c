@@ -30,14 +30,17 @@
 
 #include <json-c/json.h>
 
-#define AFB_BINDING_VERSION 3
-#define AFB_BINDING_NO_ROOT
-#include <afb/afb-binding.h>
+#include <afb/afb-auth.h>
+#include <afb/afb-session.h>
 
 #include <libafb/core/afb-cred.h>
-#include <libafb/core/afb-xreq.h>
-#include <libafb/core/afb-api-v3.h>
+#include <libafb/core/afb-req-common.h>
+#include <libafb/core/afb-api-common.h>
 #include <libafb/core/afb-apiset.h>
+#include <libafb/core/afb-data.h>
+#include <libafb/core/afb-type.h>
+#include <libafb/core/afb-evt.h>
+#include <libafb/core/afb-json-legacy.h>
 #include <libafb/wsapi/afb-stub-ws.h>
 #include <libafb/misc/afb-fdev.h>
 #include <libafb/misc/afb-socket-fdev.h>
@@ -88,8 +91,8 @@ static x_mutex_t mutex = X_MUTEX_INITIALIZER;
 static struct supervised *superviseds;
 
 /* events */
-static afb_event_t event_add_pid;
-static afb_event_t event_del_pid;
+static struct afb_evt *event_add_pid;
+static struct afb_evt *event_del_pid;
 
 /*************************************************************************************/
 
@@ -157,7 +160,7 @@ static void on_supervised_hangup(struct afb_stub_ws *stub)
 
 	/* forgive the supervised */
 	if (s) {
-		afb_event_push(event_del_pid, json_object_new_int((int)s->pid));
+		afb_json_legacy_event_push(event_del_pid, json_object_new_int((int)s->pid));
 #if WITH_CRED
 		afb_cred_unref(s->cred);
 #endif
@@ -263,7 +266,7 @@ static void accept_supervision_link(int sock)
 				rc = make_supervised(fd);
 #endif
 				if (rc > 0) {
-					afb_event_push(event_add_pid, json_object_new_int(rc));
+					afb_json_legacy_event_push(event_add_pid, json_object_new_int(rc));
 					return;
 				}
 			}
@@ -310,9 +313,8 @@ int afs_supervisor_discover()
 
 /*************************************************************************************/
 
-static void f_subscribe(afb_req_t req)
+static void f_subscribe(struct afb_req_common *req, struct json_object *args)
 {
-	struct json_object *args = afb_req_json(req);
 	int revoke, ok;
 
 	revoke = json_object_is_type(args, json_type_boolean)
@@ -320,17 +322,17 @@ static void f_subscribe(afb_req_t req)
 
 	ok = 1;
 	if (!revoke) {
-		ok = !afb_req_subscribe(req, event_add_pid)
-			&& !afb_req_subscribe(req, event_del_pid);
+		ok = !afb_req_common_subscribe(req, event_add_pid)
+			&& !afb_req_common_subscribe(req, event_del_pid);
 	}
 	if (revoke || !ok) {
-		afb_req_unsubscribe(req, event_add_pid);
-		afb_req_unsubscribe(req, event_del_pid);
+		afb_req_common_unsubscribe(req, event_add_pid);
+		afb_req_common_unsubscribe(req, event_del_pid);
 	}
-	afb_req_reply(req, NULL, ok ? NULL : "error", NULL);
+	afb_json_legacy_req_reply_hookable(req, NULL, ok ? NULL : "error", NULL);
 }
 
-static void f_list(afb_req_t req)
+static void f_list(struct afb_req_common *req, struct json_object *args)
 {
 	char pid[50];
 	struct json_object *resu, *item;
@@ -354,137 +356,110 @@ static void f_list(afb_req_t req)
 		json_object_object_add(resu, pid, item);
 		s = s->next;
 	}
-	afb_req_success(req, resu, NULL);
+	afb_json_legacy_req_reply_hookable(req, resu, NULL, NULL);
 }
 
-static void f_discover(afb_req_t req)
+static void f_discover(struct afb_req_common *req, struct json_object *args)
 {
 	afs_supervisor_discover();
-	afb_req_success(req, NULL, NULL);
+	afb_json_legacy_req_reply_hookable(req, NULL, NULL, NULL);
 }
 
-static void propagate(afb_req_t req, const char *verb)
+static void propagate(struct afb_req_common *req, struct json_object *args, const char *verb)
 {
-	struct afb_xreq *xreq;
-	struct json_object *args, *item;
+	struct json_object *item;
 	struct supervised *s;
 	struct afb_api_item api;
-	int p;
-
-	xreq = xreq_from_req_x2(req);
-	args = afb_xreq_json(xreq);
+	struct afb_data *data;
+	int p, rc;
 
 	/* extract the pid */
 	if (!json_object_object_get_ex(args, "pid", &item)) {
-		afb_xreq_reply(xreq, NULL, "no-pid", NULL);
+		afb_json_legacy_req_reply_hookable(req, NULL, "no-pid", NULL);
 		return;
 	}
 
 	p = json_object_get_int(item);
 	if (!p) {
-		afb_xreq_reply(xreq, NULL, "bad-pid", NULL);
+		afb_json_legacy_req_reply_hookable(req, NULL, "bad-pid", NULL);
 		return;
 	}
 
 	/* get supervised of pid */
 	s = supervised_of_pid((pid_t)p);
 	if (!s) {
-		afb_req_reply(req, NULL, "unknown-pid", NULL);
+		afb_json_legacy_req_reply_hookable(req, NULL, "unknown-pid", NULL);
 		return;
 	}
 	json_object_object_del(args, "pid");
 
-	/* replace the verb to call if needed */
-	if (verb)
-		xreq->request.called_verb = verb;
+	rc = afb_json_legacy_make_data_json_c(&data, json_object_get(args));
+	if (rc < 0) {
+		afb_json_legacy_req_reply_hookable(req, NULL, "internal-error", NULL);
+		return;
+	}
 
-	/* call it now */
+	/* forward it now */
+	afb_req_common_prepare_forwarding(req, "S", verb, 1, &data);
 	api = afb_stub_ws_client_api(s->stub);
-	api.itf->call(api.closure, xreq);
+	api.itf->process(api.closure, req);
 }
 
-static void f_do(afb_req_t req)
+static void f_do(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, NULL);
+	propagate(req, args, NULL);
 }
 
-static void f_config(afb_req_t req)
+static void f_config(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, NULL);
+	propagate(req, args, NULL);
 }
 
-static void f_trace(afb_req_t req)
+static void f_trace(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, NULL);
+	propagate(req, args, NULL);
 }
 
-static void f_sessions(afb_req_t req)
+static void f_sessions(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, "slist");
+	propagate(req, args, "slist");
 }
 
-static void f_session_close(afb_req_t req)
+static void f_session_close(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, "sclose");
+	propagate(req, args, "sclose");
 }
 
-static void f_exit(afb_req_t req)
+static void f_exit(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, NULL);
-	afb_req_success(req, NULL, NULL);
+	propagate(req, args, NULL);
+	afb_json_legacy_req_reply_hookable(req, NULL, NULL, NULL);
 }
 
-static void f_debug_wait(afb_req_t req)
+static void f_debug_wait(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, "wait");
-	afb_req_success(req, NULL, NULL);
+	propagate(req, args, "wait");
+	afb_json_legacy_req_reply_hookable(req, NULL, NULL, NULL);
 }
 
-static void f_debug_break(afb_req_t req)
+static void f_debug_break(struct afb_req_common *req, struct json_object *args)
 {
-	propagate(req, "break");
-	afb_req_success(req, NULL, NULL);
+	propagate(req, args, "break");
+	afb_json_legacy_req_reply_hookable(req, NULL, NULL, NULL);
 }
 
-/*************************************************************************************/
+/***************************************************************************/
 
-/**
- * initialize the supervisor
- */
-static int init_supervisor(afb_api_t api)
+static struct afb_api_common *supervisor_api;
+
+static void supervisor_process(void *closure, struct afb_req_common *req);
+static void supervisor_describe(void *closure, void (*describecb)(void *, struct json_object *), void *clocb);
+
+static struct afb_api_itf supervisor_itf =
 {
-	event_add_pid = afb_api_make_event(api, "add-pid");
-	if (!afb_event_is_valid(event_add_pid)) {
-		ERROR("Can't create added event");
-		return X_ENOMEM;
-	}
-
-	event_del_pid = afb_api_make_event(api, "del-pid");
-	if (!afb_event_is_valid(event_del_pid)) {
-		ERROR("Can't create deleted event");
-		return X_ENOMEM;
-	}
-
-	/* create an empty set for superviseds */
-	empty_apiset = afb_apiset_create(supervision_apiname, 0);
-	if (!empty_apiset) {
-		ERROR("Can't create supervision apiset");
-		return X_ENOMEM;
-	}
-
-	/* create the supervision socket */
-	supervision_fdev = afb_socket_fdev_open(supervision_socket_path, 1);
-	if (!supervision_fdev)
-		return -1;
-
-	fdev_set_events(supervision_fdev, EPOLLIN);
-	fdev_set_callback(supervision_fdev, listening,
-			  (void*)(intptr_t)fdev_fd(supervision_fdev));
-
-	return 0;
-}
-
-/*************************************************************************************/
+	.process = supervisor_process,
+	.describe = supervisor_describe
+};
 
 static const struct afb_auth _afb_auths_v2_supervisor[] = {
 	/* 0 */
@@ -494,102 +469,129 @@ static const struct afb_auth _afb_auths_v2_supervisor[] = {
 	}
 };
 
-static const struct afb_verb_v3 _afb_verbs_supervisor[] = {
-    {
-        .verb = "subscribe",
-        .callback = f_subscribe,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "list",
-        .callback = f_list,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "config",
-        .callback = f_config,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "do",
-        .callback = f_do,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "trace",
-        .callback = f_trace,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "sessions",
-        .callback = f_sessions,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "session-close",
-        .callback = f_session_close,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "exit",
-        .callback = f_exit,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "debug-wait",
-        .callback = f_debug_wait,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "debug-break",
-        .callback = f_debug_break,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    {
-        .verb = "discover",
-        .callback = f_discover,
-        .auth = &_afb_auths_v2_supervisor[0],
-        .info = NULL,
-        .session = AFB_SESSION_CHECK_X2
-    },
-    { .verb = NULL }
-};
+/***************************************************************************/
 
-static const struct afb_binding_v3 _afb_binding_supervisor = {
-    .api = supervisor_apiname,
-    .specification = NULL,
-    .info = NULL,
-    .verbs = _afb_verbs_supervisor,
-    .preinit = NULL,
-    .init = init_supervisor,
-    .onevent = NULL,
-    .noconcurrency = 0
-};
-
-int afs_supervisor_add(
-		struct afb_apiset *declare_set,
-		struct afb_apiset * call_set)
+void checkcb(void *closure, int status)
 {
-	return -!afb_api_v3_from_binding(&_afb_binding_supervisor, declare_set, call_set);
+	struct afb_req_common *req = closure;
+	void (*fun)(struct afb_req_common*, struct json_object*);
+
+	if (status <= 0)
+		return;
+
+	fun = NULL;
+	switch (req->verbname[0]) {
+	case 'c':
+		if (!strcmp(req->verbname, "config"))
+			fun = f_config;
+		break;
+
+	case 'd':
+		if (!strcmp(req->verbname, "do"))
+			fun = f_do;
+		else if (!strcmp(req->verbname, "discover"))
+			fun = f_discover;
+		else if (!strcmp(req->verbname, "debug-wait"))
+			fun = f_debug_wait;
+		else if (!strcmp(req->verbname, "debug-break"))
+			fun = f_debug_break;
+		break;
+
+	case 'e':
+		if (!strcmp(req->verbname, "exit"))
+			fun = f_exit;
+		break;
+
+	case 'l':
+		if (!strcmp(req->verbname, "list"))
+			fun = f_list;
+		break;
+
+	case 's':
+		if (!strcmp(req->verbname, "subscribe"))
+			fun = f_subscribe;
+		else if (!strcmp(req->verbname, "sessions"))
+			fun = f_sessions;
+		else if (!strcmp(req->verbname, "session-close"))
+			fun = f_session_close;
+		break;
+
+	case 't':
+		if (!strcmp(req->verbname, "trace"))
+			fun = f_trace;
+		break;
+
+	default:
+		break;
+	}
+	if (fun == NULL) {
+		afb_req_common_reply_verb_unknown_error_hookable(req);
+	}
+	else {
+		afb_json_legacy_do_single_json_c(req->nparams, req->params, (void(*)(void*,struct json_object*))fun, req);
+	}
 }
 
+static void supervisor_process(void *closure, struct afb_req_common *req)
+{
+	afb_req_common_check_and_set_session_async(req, &_afb_auths_v2_supervisor[0], AFB_SESSION_CHECK, checkcb, req);
+}
+
+static void supervisor_describe(void *closure, void (*describecb)(void *, struct json_object *), void *clocb)
+{
+	describecb(clocb, NULL /* TODO */);
+}
+
+int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_set)
+{
+	struct afb_api_item item;
+	int rc;
+
+	rc = 0;
+
+	/* create api */
+	if (rc == 0 && !supervisor_api) {
+		supervisor_api = malloc(sizeof *supervisor_api);
+		if (supervisor_api == NULL) {
+			rc = X_ENOMEM;
+		}
+		else {
+			afb_api_common_init(supervisor_api, declare_set, call_set, supervisor_apiname, 0, NULL, 0, NULL, 0);
+			item.closure = NULL;
+			item.group = NULL;
+			item.itf = &supervisor_itf;
+			rc = afb_apiset_add(declare_set, supervisor_apiname, item);
+		}
+	}
+
+	/* create events */
+	if (rc == 0 && !event_add_pid) {
+		rc = afb_api_common_new_event(supervisor_api, "add-pid", &event_add_pid);
+	}
+	if (rc == 0 && !event_del_pid) {
+		rc = afb_api_common_new_event(supervisor_api, "del-pid", &event_del_pid);
+	}
+
+	/* create an empty set for superviseds */
+	if (rc == 0 && !empty_apiset) {
+		empty_apiset = afb_apiset_create(supervision_apiname, 0);
+		if (!empty_apiset) {
+			ERROR("Can't create supervision apiset");
+			rc = X_ENOMEM;
+		}
+	}
+
+	/* create supervision socket */
+	if (rc == 0 && !supervision_fdev) {
+		supervision_fdev = afb_socket_fdev_open(supervision_socket_path, 1);
+		if (!supervision_fdev)
+			rc = -errno;
+		else {
+			fdev_set_events(supervision_fdev, EPOLLIN);
+			fdev_set_callback(supervision_fdev, listening,
+					(void*)(intptr_t)fdev_fd(supervision_fdev));
+		}
+	}
+
+	return rc;
+}
