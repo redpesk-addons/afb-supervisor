@@ -28,7 +28,7 @@ SET(PROJECT_NAME afb-supervisor)
 SET(PROJECT_LANGUAGE C)
 SET(PROJECT_PRETTY_NAME "Application Framework Supervisor")
 SET(PROJECT_DESCRIPTION "Secured binder of API for clients of the Application framework")
-set(PROJECT_VERSION 1.2)
+set(PROJECT_VERSION 4.0.0alpha)
 set(PROJECT_URL "https://gerrit.automotivelinux.org/gerrit/gitweb?p=src/app-framework-binder.git;a=summary")
 
 INCLUDE(FindPkgConfig)
@@ -36,9 +36,7 @@ INCLUDE(GNUInstallDirs)
 
 ###########################################################################
 
-set(AFS_SUPERVISION_SOCKET "@urn:AGL:afs:supervision:socket" CACHE STRING "Internal socket for supervision")
-set(AFS_SUPERVISOR_PORT    1619 CACHE STRING "Port of service for the supervisor")
-set(AFS_SUPERVISOR_TOKEN   HELLO CACHE STRING "Secret token for the supervisor")
+set(AFB_SUPERVISOR_PORT    1619 CACHE STRING "Port of service for the supervisor")
 set(UNITDIR_SYSTEM         ${CMAKE_INSTALL_LIBDIR}/systemd/system CACHE STRING "Path to systemd system unit files")
 
 ###########################################################################
@@ -64,7 +62,7 @@ set (CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_FLAGS_PROFILING    "-g -O2 -pg -U_FORTIFY_SOURCE")
 set(CMAKE_C_FLAGS_DEBUG        "-g -O2 -ggdb -U_FORTIFY_SOURCE")
 set(CMAKE_C_FLAGS_RELEASE      "-g -O3")
-set(CMAKE_C_FLAGS_CCOV         "-g -O2 --coverage")
+set(CMAKE_C_FLAGS_COVERAGE     "-g -O2 --coverage")
 
 ###########################################################################
 
@@ -72,8 +70,8 @@ INCLUDE(FindThreads)
 FIND_PACKAGE(Threads)
 
 PKG_CHECK_MODULES(json-c REQUIRED json-c)
-PKG_CHECK_MODULES(libafb REQUIRED libafb)
 PKG_CHECK_MODULES(libsystemd REQUIRED libsystemd>=222)
+PKG_CHECK_MODULES(libafb REQUIRED libafb>=4.0)
 
 ADD_SUBDIRECTORY(src)
 

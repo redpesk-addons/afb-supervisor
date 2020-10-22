@@ -2,12 +2,12 @@
 Run the supervisor on the target for the public IP:
 ---------------------------------------------------
 
-	# afs-supervisor --port 1619 --token HELLO
+	# afb-supervisor --port 1619
 
 Run the client
 --------------
 
-	# afb-client-demo -H host:1619/api?token=HELLO
+	# afb-client -H host:1619/api
 
 
 verbs that can be run, all are of the API 'supervisor':
@@ -27,7 +27,7 @@ verbs that can be run, all are of the API 'supervisor':
 
 	- sessions      {"pid":X}
 
-		get the active sessions and token of the daemon of pid X
+		get the active sessions of the daemon of pid X
 
 	- session-close {"pid":X, "uuid":UUID}
 
@@ -110,7 +110,6 @@ ON-REPLY 3:supervisor/config: OK
     "rootapi":"\/api",
     "workdir":".",
     "uploaddir":".",
-    "token":"",
     "name":null,
     "aliases":[
       "\/monitoring"
@@ -148,8 +147,7 @@ ON-REPLY 3:supervisor/config: OK
     "no_ldpaths":false,
     "noHttpd":false,
     "background":false,
-    "monitoring":true,
-    "random_token":false
+    "monitoring":true
   },
   "jtype":"afb-reply",
   "request":{
@@ -165,12 +163,8 @@ supervisor sessions {"pid":7054}
 ON-REPLY 4:supervisor/sessions: OK
 {
   "response":{
-    "2273ff8d-ee46-4059-959b-0f90fa90f25e":{
-      "token":""
-    },
-    "22563ce6-e07f-4284-91f8-e7eb7ec4ef21":{
-      "token":""
-    }
+    "2273ff8d-ee46-4059-959b-0f90fa90f25e":{},
+    "22563ce6-e07f-4284-91f8-e7eb7ec4ef21":{},
   },
   "jtype":"afb-reply",
   "request":{
@@ -287,9 +281,9 @@ Usefull commands:
 
   TARGET=...
 
-  afb-client-demo -H ws://$TARGET:1619/api?token=HELLO\&uuid=HELLO supervisor list
+  afb-client -H ws://$TARGET:1619/api?uuid=HELLO supervisor list
 
-  afb-client-demo -H ws://$TARGET:1619/api?token=HELLO\&uuid=HELLO config '{"pid":XXXX}'
+  afb-client -H ws://$TARGET:1619/api?uuid=HELLO config '{"pid":XXXX}'
 
   
 

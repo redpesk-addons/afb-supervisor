@@ -45,8 +45,8 @@
 
 #include <libafb/apis/afb-api-ws.h>
 
-#include "afs-supervisor-api.h"
-#include "afs-supervisor-opts.h"
+#include "afb-supervisor-api.h"
+#include "afb-supervisor-opts.h"
 
 #include <libafb/sys/verbose.h>
 #include <libafb/core/afb-sched.h>
@@ -58,7 +58,7 @@
 #endif
 
 /* the main config */
-struct afs_args *main_config;
+struct optargs *main_config;
 
 /* the main apiset */
 struct afb_apiset *main_apiset;
@@ -230,7 +230,7 @@ error:
 int main(int ac, char **av)
 {
 	/* scan arguments */
-	main_config = afs_args_parse(ac, av);
+	main_config = optargs_parse(ac, av);
 	if (main_config->name) {
 		verbose_set_name(main_config->name, 0);
 		process_name_set_name(main_config->name);

@@ -14,7 +14,7 @@ SmackLabelIPIn=System
 SmackLabelIPOut=System
 ListenStream=/run/platform/apis/ws/supervisor
 FileDescriptorName=supervisor
-Service=afs-supervisor.service
+Service=afb-supervisor.service
 
 [Install]
 WantedBy=sockets.target

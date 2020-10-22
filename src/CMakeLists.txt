@@ -23,32 +23,35 @@
 ###########################################################################
 
 ###########################################
-# build and install afs-supervisor
+# build and install afb-supervisor
 ###########################################
 
-add_definitions(-DAFB_SUPERVISOR_VERSION="${PROJECT_VERSION}")
+add_definitions(
+	-DAFB_SUPERVISOR_VERSION="${PROJECT_VERSION}"
+	-DAFB_SUPERVISOR_PORT=${AFB_SUPERVISOR_PORT}
+)
 
 add_compile_options(
 	${json-c_CFLAGS}
 	${libafb_CFLAGS}
 	${libsystemd_CFLAGS}
 )
-add_executable(afs-supervisor afs-supervisor.c afs-supervisor-api.c afs-discover.c afs-supervisor-opts.c)
+add_executable(afb-supervisor afb-supervisor.c afb-supervisor-api.c afb-discover.c afb-supervisor-opts.c)
 
-TARGET_LINK_LIBRARIES(afs-supervisor
+TARGET_LINK_LIBRARIES(afb-supervisor
 	${json-c_LDFLAGS}
 	${libafb_LDFLAGS}
 	${libsystemd_LDFLAGS}
 )
 
-INSTALL(TARGETS afs-supervisor
+INSTALL(TARGETS afb-supervisor
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-CONFIGURE_FILE(afs-supervisor.service.in afs-supervisor.service @ONLY)
+CONFIGURE_FILE(afb-supervisor.service.in afb-supervisor.service @ONLY)
 INSTALL(FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/afm-api-supervisor.service
 	${CMAKE_CURRENT_SOURCE_DIR}/afm-api-supervisor.socket
-	${CMAKE_CURRENT_BINARY_DIR}/afs-supervisor.service
+	${CMAKE_CURRENT_BINARY_DIR}/afb-supervisor.service
 	DESTINATION
 	${UNITDIR_SYSTEM}
 )

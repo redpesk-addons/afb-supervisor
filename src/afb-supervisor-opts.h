@@ -23,14 +23,13 @@
 #pragma once
 
 // main config structure
-struct afs_args {
+struct optargs {
 	char *rootdir;		// base dir for files
 	char *roothttp;		// directory for http files
 	char *rootbase;		// Angular HTML5 base URL
 	char *rootapi;		// Base URL for REST APIs
 	char *workdir;		// where to run the program
 	char *uploaddir;	// where to store transient files
-	char *token;		// initial authentication token [default NULL no session]
 	char *name;		/* name to set to the daemon */
 	char *ws_server;	/* exported api */
 
@@ -42,5 +41,5 @@ struct afs_args {
 	int nbSessionMax;	// max count of sessions
 };
 
-extern struct afs_args *afs_args_parse(int argc, char **argv);
+extern struct optargs *optargs_parse(int argc, char **argv);
 

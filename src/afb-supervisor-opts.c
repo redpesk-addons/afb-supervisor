@@ -29,18 +29,12 @@
 #include <unistd.h>
 
 #include <libafb/sys/verbose.h>
-#include "afs-supervisor-opts.h"
+#include "afb-supervisor-opts.h"
 
 #if !defined(AFB_SUPERVISOR_VERSION)
 #  error "you should define AFB_SUPERVISOR_VERSION"
 #endif
 
-#if !defined(AFS_SUPERVISOR_TOKEN)
-#  define AFS_SUPERVISOR_TOKEN    ""
-#endif
-#if !defined(AFS_SUPERVISOR_PORT)
-#  define AFS_SUPERVISOR_PORT     1619
-#endif
 #define _STRINGIFY_(x) #x
 #define STRINGIFY(x) _STRINGIFY_(x)
 
@@ -76,7 +70,6 @@
 #define SET_TCP_PORT       'p'
 #define SET_QUIET          'q'
 #define WS_SERVICE         's'
-#define SET_AUTH_TOKEN     't'
 #define SET_UPLOAD_DIR     'u'
 #define DISPLAY_VERSION    'V'
 #define SET_VERBOSE        'v'
@@ -102,7 +95,7 @@ static AFB_options cliOptions[] = {
 
 	{SET_NAME,          1, "name",        "Set the visible name"},
 
-	{SET_TCP_PORT,      1, "port",        "HTTP listening TCP port  [default " STRINGIFY(AFS_SUPERVISOR_PORT) "]"},
+	{SET_TCP_PORT,      1, "port",        "HTTP listening TCP port  [default " STRINGIFY(AFB_SUPERVISOR_PORT) "]"},
 	{SET_ROOT_HTTP,     1, "roothttp",    "HTTP Root Directory [default no root http (files not served but apis still available)]"},
 	{SET_ROOT_BASE,     1, "rootbase",    "Angular Base Root URL [default /opa]"},
 	{SET_ROOT_API,      1, "rootapi",     "HTML Root API URL [default /api]"},
@@ -115,8 +108,6 @@ static AFB_options cliOptions[] = {
 	{SET_UPLOAD_DIR,    1, "uploaddir",   "Directory for uploading files [default: workdir]"},
 	{SET_ROOT_DIR,      1, "rootdir",     "Root Directory of the application [default: workdir]"},
 	{SET_SESSION_DIR,   1, "sessiondir",  "OBSOLETE (was: Sessions file path)"},
-
-	{SET_AUTH_TOKEN,    1, "token",       "Initial Secret [default=" AFS_SUPERVISOR_TOKEN ", use --token="" to allow any token]"},
 
 	{WS_SERVICE,        1, "ws-server",   "Provide supervisor as websocket"},
 	{DISPLAY_VERSION,   0, "version",     "Display version and copyright"},
@@ -143,10 +134,10 @@ static void printVersion(FILE * file)
 {
 	static const char version[] =
 		"\n"
-		"  afs-supervisor [Application Framework Supervisor] version="AFB_SUPERVISOR_VERSION"\n"
+		"  afb-supervisor [Application Framework Supervisor] version="AFB_SUPERVISOR_VERSION"\n"
 		"\n"
 		"  Copyright (C) 2015-2020 IoT.bzh Company\n"
-		"  afs-supervisor comes with ABSOLUTELY NO WARRANTY.\n"
+		"  afb-supervisor comes with ABSOLUTELY NO WARRANTY.\n"
 		"  Licence Apache 2\n"
 		"\n";
 
@@ -171,7 +162,7 @@ static void printHelp(FILE * file, const char *name)
 		fprintf(file, "  --%-15s %s\n", command, cliOptions[ind].help);
 	}
 	fprintf(file,
-		"Example:\n  %s  --verbose --port=1234 --token='azerty'\n",
+		"Example:\n  %s  --verbose --port=1234\n",
 		name);
 }
 
@@ -244,7 +235,7 @@ static void noarg(int optc)
  |   Parse option and launch action
  +--------------------------------------------------------- */
 
-static void parse_arguments(int argc, char **argv, struct afs_args *config)
+static void parse_arguments(int argc, char **argv, struct optargs *config)
 {
 	char *programName = argv[0];
 	int optc, ind;
@@ -306,10 +297,6 @@ static void parse_arguments(int argc, char **argv, struct afs_args *config)
 			INFO("Forcing Rootapi=%s", config->rootapi);
 			break;
 
-		case SET_AUTH_TOKEN:
-			config->token = argvalstr(optc);
-			break;
-
 		case SET_UPLOAD_DIR:
 			config->uploaddir = argvalstr(optc);
 			break;
@@ -350,11 +337,11 @@ static void parse_arguments(int argc, char **argv, struct afs_args *config)
 	free(gnuOptions);
 }
 
-static void fulfill_config(struct afs_args *config)
+static void fulfill_config(struct optargs *config)
 {
 	// default HTTP port
 	if (config->httpdPort == 0)
-		config->httpdPort = AFS_SUPERVISOR_PORT;
+		config->httpdPort = AFB_SUPERVISOR_PORT;
 
 	// default binding API timeout
 	if (config->apiTimeout == 0)
@@ -388,12 +375,9 @@ static void fulfill_config(struct afs_args *config)
 
 	if (config->rootapi == NULL)
 		config->rootapi = "/api";
-
-	if (config->token == NULL)
-		config->token = AFS_SUPERVISOR_TOKEN;
 }
 
-static void dump(struct afs_args *config)
+static void dump(struct optargs *config)
 {
 #define NN(x)   (x)?:""
 #define P(...)  fprintf(stderr, __VA_ARGS__)
@@ -409,7 +393,6 @@ static void dump(struct afs_args *config)
 	S(rootapi)
 	S(workdir)
 	S(uploaddir)
-	S(token)
 	S(name)
 	S(ws_server)
 
@@ -432,13 +415,13 @@ static void dump(struct afs_args *config)
 #undef NN
 }
 
-static void parse_environment(struct afs_args *config)
+static void parse_environment(struct optargs *config)
 {
 }
 
-struct afs_args *afs_args_parse(int argc, char **argv)
+struct optargs *optargs_parse(int argc, char **argv)
 {
-	struct afs_args *result;
+	struct optargs *result;
 
 	result = calloc(1, sizeof *result);
 

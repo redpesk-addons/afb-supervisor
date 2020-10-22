@@ -1,0 +1,9 @@
+[Unit]
+Description=Application Framework Supervisor
+
+[Service]
+ExecStart=/usr/bin/afb-supervisor --port @AFB_SUPERVISOR_PORT@ --ws-server=sd:supervisor
+
+[Install]
+WantedBy=multi-user.target
+

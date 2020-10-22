@@ -1,9 +1,0 @@
-[Unit]
-Description=Application Framework Supervisor
-
-[Service]
-ExecStart=/usr/bin/afs-supervisor --port @AFS_SUPERVISOR_PORT@ --token @AFS_SUPERVISOR_TOKEN@ --ws-server=sd:supervisor
-
-[Install]
-WantedBy=multi-user.target
-
