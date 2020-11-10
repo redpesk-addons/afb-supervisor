@@ -528,7 +528,7 @@ void checkcb(void *closure, int status)
 		afb_req_common_reply_verb_unknown_error_hookable(req);
 	}
 	else {
-		afb_json_legacy_do_single_json_c(req->nparams, req->params, (void(*)(void*,struct json_object*))fun, req);
+		afb_json_legacy_do_single_json_c(req->params.ndata, req->params.data, (void(*)(void*,struct json_object*))fun, req);
 	}
 }
 
