@@ -51,7 +51,7 @@
 #include <libafb/sys/verbose.h>
 #include <libafb/core/afb-sched.h>
 #include <libafb/sys/process-name.h>
-#include <libafb/sys/watchdog.h>
+#include <libafb/misc/afb-watchdog.h>
 
 #if !defined(DEFAULT_SUPERVISOR_INTERFACE)
 #  define DEFAULT_SUPERVISOR_INTERFACE NULL
@@ -213,7 +213,7 @@ static void start(int signum, void *arg)
 
 	/* activate the watchdog */
 #if HAS_WATCHDOG
-	if (watchdog_activate() < 0)
+	if (afb_watchdog_activate() < 0)
 		ERROR("can't start the watchdog");
 #endif
 

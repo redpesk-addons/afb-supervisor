@@ -42,10 +42,11 @@
 #include <libafb/core/afb-evt.h>
 #include <libafb/core/afb-json-legacy.h>
 #include <libafb/wsapi/afb-stub-ws.h>
-#include <libafb/misc/afb-fdev.h>
-#include <libafb/misc/afb-socket-fdev.h>
 
-#include <libafb/sys/fdev.h>
+#include <libafb/sys/ev-mgr.h>
+#include <libafb/core/afb-ev-mgr.h>
+#include <libafb/misc/afb-socket.h>
+
 #include <libafb/sys/verbose.h>
 #include <libafb/utils/wrap-json.h>
 #include <libafb/sys/x-socket.h>
@@ -81,8 +82,8 @@ static const char supervisor_apiname[] = AFB_SUPERVISOR_APINAME;
 static struct afb_apiset *empty_apiset;
 
 /* supervision socket path */
-static const char supervision_socket_path[] = AFB_SUPERVISOR_SOCKET;
-static struct fdev *supervision_fdev;
+static const char supervision_socket_path[] = "unix:" AFB_SUPERVISOR_SOCKET;
+static struct ev_fd *supervision_efd;
 
 /* global mutex */
 static x_mutex_t mutex = X_MUTEX_INITIALIZER;
@@ -179,19 +180,12 @@ static int make_supervised(int fd)
 #endif
 {
 	struct supervised *s;
-	struct fdev *fdev;
 
 	s = malloc(sizeof *s);
 	if (!s)
 		return X_ENOMEM;
 
-	fdev = afb_fdev_create(fd);
-	if (!fdev) {
-		free(s);
-		return -1;
-	}
-
-	s->stub = afb_stub_ws_create_client(fdev, supervision_apiname, empty_apiset);
+	s->stub = afb_stub_ws_create_client(fd, supervision_apiname, empty_apiset);
 	if (!s->stub) {
 		free(s);
 		return -1;
@@ -281,14 +275,14 @@ static void accept_supervision_link(int sock)
 /*
  * handle even on server socket
  */
-static void listening(void *closure, uint32_t revents, struct fdev *fdev)
+static void listening(struct ev_fd *efd, int fd, uint32_t revents, void *closure)
 {
 	if ((revents & EPOLLHUP) != 0) {
 		ERROR("supervision socket closed");
 		exit(1);
 	}
 	if ((revents & EPOLLIN) != 0)
-		accept_supervision_link((int)(intptr_t)closure);
+		accept_supervision_link(fd);
 }
 
 /*
@@ -545,7 +539,7 @@ static void supervisor_describe(void *closure, void (*describecb)(void *, struct
 int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_set)
 {
 	struct afb_api_item item;
-	int rc;
+	int rc, fd;
 
 	rc = 0;
 
@@ -557,6 +551,7 @@ int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_s
 		}
 		else {
 			afb_api_common_init(supervisor_api, declare_set, call_set, supervisor_apiname, 0, NULL, 0, NULL, 0);
+			supervisor_api->state = Api_State_Run;
 			item.closure = NULL;
 			item.group = NULL;
 			item.itf = &supervisor_itf;
@@ -582,14 +577,13 @@ int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_s
 	}
 
 	/* create supervision socket */
-	if (rc == 0 && !supervision_fdev) {
-		supervision_fdev = afb_socket_fdev_open(supervision_socket_path, 1);
-		if (!supervision_fdev)
-			rc = -errno;
-		else {
-			fdev_set_events(supervision_fdev, EPOLLIN);
-			fdev_set_callback(supervision_fdev, listening,
-					(void*)(intptr_t)fdev_fd(supervision_fdev));
+	if (rc == 0 && !supervision_efd) {
+		rc = afb_socket_open(supervision_socket_path, 1);
+		if (rc >= 0) {
+			fd = rc;
+			rc = afb_ev_mgr_add_fd(&supervision_efd, fd, EPOLLIN, listening, 0, 0, 1);
+			if (rc < 0)
+				close(fd);
 		}
 	}
 
