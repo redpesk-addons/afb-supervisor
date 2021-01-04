@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 IoT.bzh Company
+ * Copyright (C) 2015-2021 IoT.bzh Company
  *
  * $RP_BEGIN_LICENSE$
  * Commercial License Usage

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 IoT.bzh Company
+ * Copyright (C) 2015-2021 IoT.bzh Company
  * Author: José Bollo <jose.bollo@iot.bzh>
  *
  * $RP_BEGIN_LICENSE$
@@ -136,7 +136,7 @@ static void printVersion(FILE * file)
 		"\n"
 		"  afb-supervisor [Application Framework Supervisor] version="AFB_SUPERVISOR_VERSION"\n"
 		"\n"
-		"  Copyright (C) 2015-2020 IoT.bzh Company\n"
+		"  Copyright (C) 2015-2021 IoT.bzh Company\n"
 		"  afb-supervisor comes with ABSOLUTELY NO WARRANTY.\n"
 		"  Licence Apache 2\n"
 		"\n";
