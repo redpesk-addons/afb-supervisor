@@ -3,7 +3,7 @@
 This project provides the supervisor component of the the microservice architecture
 application framework.
 
-This project is available at <https://github.com/redpesk/afb-supervisor>
+This project is available at <https://github.com/redpesk-core/afb-supervisor>
 
 ## License and copying
 
