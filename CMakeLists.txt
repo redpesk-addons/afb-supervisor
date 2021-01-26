@@ -28,7 +28,7 @@ SET(PROJECT_NAME afb-supervisor)
 SET(PROJECT_LANGUAGE C)
 SET(PROJECT_PRETTY_NAME "Application Framework Supervisor")
 SET(PROJECT_DESCRIPTION "Secured binder of API for clients of the Application framework")
-set(PROJECT_VERSION 4.0.0alpha)
+set(PROJECT_VERSION 4.0.0beta2)
 set(PROJECT_URL "https://gerrit.automotivelinux.org/gerrit/gitweb?p=src/app-framework-binder.git;a=summary")
 
 INCLUDE(FindPkgConfig)
