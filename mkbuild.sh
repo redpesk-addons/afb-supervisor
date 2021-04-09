@@ -12,14 +12,16 @@ while :; do
 	esac
 done
 
-mkdir -p "$h/$bd" || exit
-cd "$h/$bd" || exit
+cd "$h"
+h=$(pwd)
+mkdir -p "$bd" || exit
+cd "$bd" || exit
 $force && rm -r * 2>/dev/null || rm CMakeCache.txt 2>/dev/null
 
 cmake \
 	-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:=$HOME/.local} \
 	-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Debug} \
-	..
+	"$h"
 
 make -j "$@"
 
