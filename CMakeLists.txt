@@ -28,7 +28,7 @@ SET(PROJECT_NAME afb-supervisor)
 SET(PROJECT_LANGUAGE C)
 SET(PROJECT_PRETTY_NAME "Application Framework Supervisor")
 SET(PROJECT_DESCRIPTION "Secured binder of API for clients of the Application framework")
-set(PROJECT_VERSION 4.0.1)
+set(PROJECT_VERSION 4.1.0)
 set(PROJECT_URL "https://github.com/redpesk-core/afb-supervisor")
 
 INCLUDE(FindPkgConfig)
@@ -71,7 +71,7 @@ FIND_PACKAGE(Threads)
 
 PKG_CHECK_MODULES(json-c REQUIRED json-c)
 PKG_CHECK_MODULES(libsystemd REQUIRED libsystemd>=222)
-PKG_CHECK_MODULES(libafb REQUIRED libafb>=4.0)
+PKG_CHECK_MODULES(libafb REQUIRED libafb>=4.1)
 
 ADD_SUBDIRECTORY(src)
 

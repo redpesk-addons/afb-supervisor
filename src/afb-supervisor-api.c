@@ -185,7 +185,7 @@ static int make_supervised(int fd)
 	if (!s)
 		return X_ENOMEM;
 
-	s->stub = afb_stub_ws_create_client(fd, supervision_apiname, empty_apiset);
+	s->stub = afb_stub_ws_create_client(fd, 1, supervision_apiname, empty_apiset);
 	if (!s->stub) {
 		free(s);
 		return -1;
