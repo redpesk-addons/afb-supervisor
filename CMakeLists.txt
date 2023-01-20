@@ -22,14 +22,12 @@
 # $RP_END_LICENSE$
 ###########################################################################
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
-
-SET(PROJECT_NAME afb-supervisor)
-SET(PROJECT_LANGUAGE C)
-SET(PROJECT_PRETTY_NAME "Application Framework Supervisor")
-SET(PROJECT_DESCRIPTION "Secured binder of API for clients of the Application framework")
-set(PROJECT_VERSION 4.1.0)
-set(PROJECT_URL "https://github.com/redpesk-core/afb-supervisor")
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+project(afb-supervisor
+        VERSION       4.2.0
+        DESCRIPTION   "Application Framework Supervisor"
+        HOMEPAGE_URL  https://github.com/redpesk-core/afb-supervisor
+        LANGUAGES     C)
 
 INCLUDE(FindPkgConfig)
 INCLUDE(GNUInstallDirs)
