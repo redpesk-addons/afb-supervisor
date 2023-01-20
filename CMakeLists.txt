@@ -71,7 +71,7 @@ FIND_PACKAGE(Threads)
 
 PKG_CHECK_MODULES(json-c REQUIRED json-c)
 PKG_CHECK_MODULES(libsystemd REQUIRED libsystemd>=222)
-PKG_CHECK_MODULES(libafb REQUIRED libafb>=4.1)
+PKG_CHECK_MODULES(libafb REQUIRED libafb>=5.0)
 
 ADD_SUBDIRECTORY(src)
 

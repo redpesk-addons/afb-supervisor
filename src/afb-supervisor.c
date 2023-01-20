@@ -48,7 +48,7 @@
 #include "afb-supervisor-api.h"
 #include "afb-supervisor-opts.h"
 
-#include <libafb/sys/verbose.h>
+#include <libafb/misc/afb-verbose.h>
 #include <libafb/core/afb-sched.h>
 #include <libafb/sys/process-name.h>
 #include <libafb/misc/afb-watchdog.h>
@@ -97,36 +97,36 @@ static struct afb_hsrv *start_http_server()
 	struct afb_hsrv *hsrv;
 
 	if (afb_hreq_init_download_path(main_config->uploaddir)) {
-		ERROR("unable to set the upload directory %s", main_config->uploaddir);
+		LIBAFB_ERROR("unable to set the upload directory %s", main_config->uploaddir);
 		return NULL;
 	}
 
 	hsrv = afb_hsrv_create();
 	if (hsrv == NULL) {
-		ERROR("memory allocation failure");
+		LIBAFB_ERROR("memory allocation failure");
 		return NULL;
 	}
 
 	if (!afb_hsrv_set_cache_timeout(hsrv, main_config->cacheTimeout)
 	    || !init_http_server(hsrv)) {
-		ERROR("initialisation of httpd failed");
+		LIBAFB_ERROR("initialisation of httpd failed");
 		afb_hsrv_put(hsrv);
 		return NULL;
 	}
 
-	NOTICE("Waiting port=%d rootdir=%s", main_config->httpdPort, main_config->rootdir);
-	NOTICE("Browser URL= http://localhost:%d", main_config->httpdPort);
+	LIBAFB_NOTICE("Waiting port=%d rootdir=%s", main_config->httpdPort, main_config->rootdir);
+	LIBAFB_NOTICE("Browser URL= http://localhost:%d", main_config->httpdPort);
 
 	rc = afb_hsrv_start(hsrv, 15);
 	if (!rc) {
-		ERROR("starting of httpd failed");
+		LIBAFB_ERROR("starting of httpd failed");
 		afb_hsrv_put(hsrv);
 		return NULL;
 	}
 
 	rc = afb_hsrv_add_interface_tcp(hsrv, DEFAULT_SUPERVISOR_INTERFACE, (uint16_t) main_config->httpdPort);
 	if (rc < 0) {
-		ERROR("setting interface failed");
+		LIBAFB_ERROR("setting interface failed");
 		afb_hsrv_put(hsrv);
 		return NULL;
 	}
@@ -142,37 +142,37 @@ static void start(int signum, void *arg)
 
 	/* check illness */
 	if (signum) {
-		ERROR("start aborted: received signal %s", strsignal(signum));
+		LIBAFB_ERROR("start aborted: received signal %s", strsignal(signum));
 		exit(1);
 	}
 
 	/* set the directories */
 	mkdir(main_config->workdir, S_IRWXU | S_IRGRP | S_IXGRP);
 	if (chdir(main_config->workdir) < 0) {
-		ERROR("Can't enter working dir %s", main_config->workdir);
+		LIBAFB_ERROR("Can't enter working dir %s", main_config->workdir);
 		goto error;
 	}
 	if (afb_common_rootdir_set(main_config->rootdir) < 0) {
-		ERROR("failed to set common root directory");
+		LIBAFB_ERROR("failed to set common root directory");
 		goto error;
 	}
 
 	/* configure the daemon */
 	if (afb_session_init(main_config->nbSessionMax, main_config->cntxTimeout)) {
-		ERROR("initialisation of session manager failed");
+		LIBAFB_ERROR("initialisation of session manager failed");
 		goto error;
 	}
 
 	main_apiset = afb_apiset_create("main", main_config->apiTimeout);
 	if (!main_apiset) {
-		ERROR("can't create main apiset");
+		LIBAFB_ERROR("can't create main apiset");
 		goto error;
 	}
 
 	/* init the main apiset */
 	rc = afs_supervisor_add(main_apiset, main_apiset);
 	if (rc < 0) {
-		ERROR("Can't create supervision's apiset: %m");
+		LIBAFB_ERROR("Can't create supervision's apiset: %m");
 		goto error;
 	}
 
@@ -180,7 +180,7 @@ static void start(int signum, void *arg)
 	if (main_config->ws_server) {
 		rc = afb_api_ws_add_server(main_config->ws_server, main_apiset, main_apiset);
 		if (rc < 0) {
-			ERROR("Can't export (ws-server) api %s: %m", main_config->ws_server);
+			LIBAFB_ERROR("Can't export (ws-server) api %s: %m", main_config->ws_server);
 			goto error;
 		}
 	}
@@ -192,12 +192,12 @@ static void start(int signum, void *arg)
 #if WITH_LIBMICROHTTPD
 	/* start the HTTP server */
 	if (main_config->httpdPort <= 0) {
-		ERROR("no port is defined");
+		LIBAFB_ERROR("no port is defined");
 		goto error;
 	}
 
 	if (!afb_hreq_init_cookie(main_config->httpdPort, main_config->rootapi, main_config->cntxTimeout)) {
-		ERROR("initialisation of HTTP cookies failed");
+		LIBAFB_ERROR("initialisation of HTTP cookies failed");
 		goto error;
 	}
 
@@ -214,7 +214,7 @@ static void start(int signum, void *arg)
 	/* activate the watchdog */
 #if HAS_WATCHDOG
 	if (afb_watchdog_activate() < 0)
-		ERROR("can't start the watchdog");
+		LIBAFB_ERROR("can't start the watchdog");
 #endif
 
 	/* discover binders */
@@ -232,13 +232,13 @@ int main(int ac, char **av)
 	/* scan arguments */
 	main_config = optargs_parse(ac, av);
 	if (main_config->name) {
-		verbose_set_name(main_config->name, 0);
+		/*afb_verbose_set_name(main_config->name, 0);*/
 		process_name_set_name(main_config->name);
 		process_name_replace_cmdline(av, main_config->name);
 	}
 	/* enter job processing */
 	afb_sched_start(3, 0, 10, start, av[1]);
-	WARNING("hoops returned from jobs_enter! [report bug]");
+	LIBAFB_WARNING("hoops returned from jobs_enter! [report bug]");
 	return 1;
 }
 

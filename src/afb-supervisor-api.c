@@ -47,8 +47,7 @@
 #include <libafb/core/afb-ev-mgr.h>
 #include <libafb/misc/afb-socket.h>
 
-#include <libafb/sys/verbose.h>
-#include <libafb/utils/wrap-json.h>
+#include <libafb/misc/afb-verbose.h>
 #include <libafb/sys/x-socket.h>
 #include <libafb/sys/x-mutex.h>
 #include <libafb/sys/x-errno.h>
@@ -120,9 +119,9 @@ static int send_initiator(int fd, const char *command)
 	swr = write(fd, &asi, sizeof asi);
 	if (swr < 0) {
 		rc = -errno;
-		ERROR("Can't send initiator: %s", strerror(-rc));
+		LIBAFB_ERROR("Can't send initiator: %s", strerror(-rc));
 	} else if (swr < sizeof asi) {
-		ERROR("Sending incomplete initiator!");
+		LIBAFB_ERROR("Sending incomplete initiator!");
 		rc = X_EAGAIN;
 	} else
 		rc = 0;
@@ -278,7 +277,7 @@ static void accept_supervision_link(int sock)
 static void listening(struct ev_fd *efd, int fd, uint32_t revents, void *closure)
 {
 	if ((revents & EPOLLHUP) != 0) {
-		ERROR("supervision socket closed");
+		LIBAFB_ERROR("supervision socket closed");
 		exit(1);
 	}
 	if ((revents & EPOLLIN) != 0)
@@ -338,14 +337,13 @@ static void f_list(struct afb_req_common *req, struct json_object *args)
 		sprintf(pid, "%d", (int)s->pid);
 		item = NULL;
 #if WITH_CRED
-		wrap_json_pack(&item, "{si si si ss ss ss}",
-				"pid", (int)s->cred->pid,
-				"uid", (int)s->cred->uid,
-				"gid", (int)s->cred->gid,
-				"id", s->cred->id,
-				"label", s->cred->label,
-				"user", s->cred->user
-				);
+		resu = json_object_new_object();
+		json_object_object_add(resu, "pid", json_object_new_int((int)s->cred->pid));
+		json_object_object_add(resu, "uid", json_object_new_int((int)s->cred->uid));
+		json_object_object_add(resu, "gid", json_object_new_int((int)s->cred->gid));
+		json_object_object_add(resu, "id", json_object_new_string(s->cred->id));
+		json_object_object_add(resu, "label", json_object_new_string(s->cred->label));
+		json_object_object_add(resu, "user", json_object_new_string(s->cred->user));
 #endif
 		json_object_object_add(resu, pid, item);
 		s = s->next;
@@ -571,7 +569,7 @@ int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_s
 	if (rc == 0 && !empty_apiset) {
 		empty_apiset = afb_apiset_create(supervision_apiname, 0);
 		if (!empty_apiset) {
-			ERROR("Can't create supervision apiset");
+			LIBAFB_ERROR("Can't create supervision apiset");
 			rc = X_ENOMEM;
 		}
 	}

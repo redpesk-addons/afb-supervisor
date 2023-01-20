@@ -28,7 +28,7 @@
 #include <limits.h>
 #include <unistd.h>
 
-#include <libafb/sys/verbose.h>
+#include <libafb/misc/afb-verbose.h>
 #include "afb-supervisor-opts.h"
 
 #if !defined(AFB_SUPERVISOR_VERSION)
@@ -182,7 +182,7 @@ static const char *name_of_option(int optc)
 static const char *current_argument(int optc)
 {
 	if (optarg == 0) {
-		ERROR("option [--%s] needs a value i.e. --%s=xxx",
+		LIBAFB_ERROR("option [--%s] needs a value i.e. --%s=xxx",
 		      name_of_option(optc), name_of_option(optc));
 		exit(1);
 	}
@@ -193,7 +193,7 @@ static char *argvalstr(int optc)
 {
 	char *result = strdup(current_argument(optc));
 	if (result == NULL) {
-		ERROR("can't alloc memory");
+		LIBAFB_ERROR("can't alloc memory");
 		exit(1);
 	}
 	return result;
@@ -206,12 +206,12 @@ static int argvalint(int optc, int mini, int maxi, int base)
 	beg = current_argument(optc);
 	val = strtol(beg, (char**)&end, base);
 	if (*end || end == beg) {
-		ERROR("option [--%s] requires a valid integer (found %s)",
+		LIBAFB_ERROR("option [--%s] requires a valid integer (found %s)",
 			name_of_option(optc), beg);
 		exit(1);
 	}
 	if (val < (long int)mini || val > (long int)maxi) {
-		ERROR("option [--%s] value out of bounds (not %d<=%ld<=%d)",
+		LIBAFB_ERROR("option [--%s] value out of bounds (not %d<=%ld<=%d)",
 			name_of_option(optc), mini, val, maxi);
 		exit(1);
 	}
@@ -226,7 +226,7 @@ static int argvalintdec(int optc, int mini, int maxi)
 static void noarg(int optc)
 {
 	if (optarg != 0) {
-		ERROR("option [--%s] need no value (found %s)", name_of_option(optc), optarg);
+		LIBAFB_ERROR("option [--%s] need no value (found %s)", name_of_option(optc), optarg);
 		exit(1);
 	}
 }
@@ -258,11 +258,11 @@ static void parse_arguments(int argc, char **argv, struct optargs *config)
 	while ((optc = getopt_long(argc, argv, shortopts, gnuOptions, NULL)) != EOF) {
 		switch (optc) {
 		case SET_VERBOSE:
-			verbose_inc();
+			afb_verbose_inc();
 			break;
 
 		case SET_QUIET:
-			verbose_dec();
+			afb_verbose_dec();
 			break;
 
 		case SET_TCP_PORT:
@@ -279,22 +279,22 @@ static void parse_arguments(int argc, char **argv, struct optargs *config)
 
 		case SET_ROOT_DIR:
 			config->rootdir = argvalstr(optc);
-			INFO("Forcing Rootdir=%s", config->rootdir);
+			LIBAFB_INFO("Forcing Rootdir=%s", config->rootdir);
 			break;
 
 		case SET_ROOT_HTTP:
 			config->roothttp = argvalstr(optc);
-			INFO("Forcing Root HTTP=%s", config->roothttp);
+			LIBAFB_INFO("Forcing Root HTTP=%s", config->roothttp);
 			break;
 
 		case SET_ROOT_BASE:
 			config->rootbase = argvalstr(optc);
-			INFO("Forcing Rootbase=%s", config->rootbase);
+			LIBAFB_INFO("Forcing Rootbase=%s", config->rootbase);
 			break;
 
 		case SET_ROOT_API:
 			config->rootapi = argvalstr(optc);
-			INFO("Forcing Rootapi=%s", config->rootapi);
+			LIBAFB_INFO("Forcing Rootapi=%s", config->rootapi);
 			break;
 
 		case SET_UPLOAD_DIR:
@@ -428,7 +428,7 @@ struct optargs *optargs_parse(int argc, char **argv)
 	parse_environment(result);
 	parse_arguments(argc, argv, result);
 	fulfill_config(result);
-	if (verbose_wants(Log_Level_Info))
+	if (afb_verbose_wants(afb_Log_Level_Info))
 		dump(result);
 	return result;
 }
