@@ -69,7 +69,7 @@ struct afb_apiset *main_apiset;
 static int init_http_server(struct afb_hsrv *hsrv)
 {
 	if (!afb_hsrv_add_handler
-	    (hsrv, main_config->rootapi, afb_hswitch_websocket_switch, main_apiset, 20))
+	    (hsrv, main_config->rootapi, afb_hswitch_upgrade, main_apiset, 20))
 		return 0;
 
 	if (!afb_hsrv_add_handler
