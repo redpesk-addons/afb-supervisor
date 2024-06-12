@@ -548,7 +548,7 @@ int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_s
 			rc = X_ENOMEM;
 		}
 		else {
-			afb_api_common_init(supervisor_api, declare_set, call_set, supervisor_apiname, 0, NULL, 0, NULL, 0);
+			afb_api_common_init(supervisor_api, declare_set, call_set, supervisor_apiname, 0, NULL, 0, NULL, 0, supervisor_api);
 			supervisor_api->state = Api_State_Run;
 			item.closure = NULL;
 			item.group = NULL;
