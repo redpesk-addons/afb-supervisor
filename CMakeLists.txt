@@ -24,7 +24,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 project(afb-supervisor
-        VERSION       4.2.1
+        VERSION       4.2.2
         DESCRIPTION   "Application Framework Supervisor"
         HOMEPAGE_URL  https://github.com/redpesk-core/afb-supervisor
         LANGUAGES     C)
