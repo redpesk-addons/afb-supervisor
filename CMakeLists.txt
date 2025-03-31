@@ -24,7 +24,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 project(afb-supervisor
-        VERSION       4.2.2
+        VERSION       4.2.3
         DESCRIPTION   "Application Framework Supervisor"
         HOMEPAGE_URL  https://github.com/redpesk-core/afb-supervisor
         LANGUAGES     C)
@@ -69,7 +69,7 @@ FIND_PACKAGE(Threads)
 
 PKG_CHECK_MODULES(json-c REQUIRED json-c)
 PKG_CHECK_MODULES(libsystemd REQUIRED libsystemd>=222)
-PKG_CHECK_MODULES(libafb REQUIRED libafb>=5.2.0)
+PKG_CHECK_MODULES(libafb REQUIRED libafb>=5.3.8)
 
 ADD_SUBDIRECTORY(src)
 

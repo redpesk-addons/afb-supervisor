@@ -276,11 +276,11 @@ static void accept_supervision_link(int sock)
  */
 static void listening(struct ev_fd *efd, int fd, uint32_t revents, void *closure)
 {
-	if ((revents & EPOLLHUP) != 0) {
+	if ((revents & EV_FD_HUP) != 0) {
 		LIBAFB_ERROR("supervision socket closed");
 		exit(1);
 	}
-	if ((revents & EPOLLIN) != 0)
+	if ((revents & EV_FD_IN) != 0)
 		accept_supervision_link(fd);
 }
 
@@ -579,7 +579,7 @@ int afs_supervisor_add(struct afb_apiset *declare_set, struct afb_apiset *call_s
 		rc = afb_socket_open(supervision_socket_path, 1);
 		if (rc >= 0) {
 			fd = rc;
-			rc = afb_ev_mgr_add_fd(&supervision_efd, fd, EPOLLIN, listening, 0, 0, 1);
+			rc = afb_ev_mgr_add_fd(&supervision_efd, fd, EV_FD_IN, listening, 0, 0, 1);
 			if (rc < 0)
 				close(fd);
 		}
